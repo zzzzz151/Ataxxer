@@ -5,12 +5,12 @@ from math import pow, sqrt, log, log10, copysign, pi
 from dataclasses import dataclass
 
 class SPRT:
-    def __init__(self, elo0: float, elo1: float, alpha: float, beta: float, cutechess: bool):
+    def __init__(self, elo0: float, elo1: float, alpha: float, beta: float, cutechess_llr: bool):
         self.elo0 = elo0
         self.elo1 = elo1
         self.lower = log(beta / (1 - alpha))
         self.upper = log((1 - beta) / alpha)
-        self.cutechess = cutechess
+        self.cutechess_llr = cutechess_llr
 
     def expected_score(self, x: float) -> float:
         return 1.0 / (1.0 + pow(10, -x / 400.0))
@@ -74,7 +74,7 @@ class SPRT:
         draw_elo = 200 * log10((1 - 1 / prob_win) * (1 - 1 / prob_loss))
 
         # cutechess applies a draw elo based scaling
-        s = self.scale(draw_elo) if self.cutechess else 1
+        s = self.scale(draw_elo) if self.cutechess_llr else 1
 
         p0 = self.adj_probs(self.elo0 / s, draw_elo)
         p1 = self.adj_probs(self.elo1 / s, draw_elo)

@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument("--elo1", help="elo1", type=float, required=True)
     parser.add_argument("--alpha", help="alpha", type=float, required=True)
     parser.add_argument("--beta", help="beta", type=float, required=True)
-    parser.add_argument("--cutechess", help="Use Cutechess draw scaling", action="store_true")
+    parser.add_argument("--cutechess_llr", help="Use Cutechess LLR formula", action="store_true")
     parser.add_argument("--ratinginterval", help="Print current SPRT results every x games", type=int, required=True)
     args = parser.parse_args()
 
@@ -41,8 +41,8 @@ if __name__ == "__main__":
     print("Time control", args.tc, "seconds")
     print("Concurrency", args.concurrency)
     print("Openings book", args.openings)
-    print("elo0", args.elo0, "elo1", args.elo1, "alpha", args.alpha, "beta", args.beta)
-    print("Cutechess sprt", "True" if args.cutechess else "False")
+    print("elo0 {} elo1 {} alpha {} beta {} cutechess_llr {}".format(
+        args.elo0, args.elo1, args.alpha, args.beta, args.cutechess_llr))
     print("Rating interval", args.ratinginterval)
     print()
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
             if os.path.isfile(file_path):
                 os.unlink(file_path)
 
-    sprt = SPRT(args.elo0, args.elo1, args.alpha, args.beta, args.cutechess)
+    sprt = SPRT(args.elo0, args.elo1, args.alpha, args.beta, args.cutechess_llr)
 
     # Launch <concurrency> processes/workers
     # Each will launch 2 subprocesses (1 for each engine)
@@ -84,12 +84,14 @@ if __name__ == "__main__":
             'w_red': manager.Value('i', 0),  # Red wins
             'l_red': manager.Value('i', 0),  # Red losses
         }
+
         for i in range(args.concurrency):
             worker_args = (i+1, args.engine1, args.engine2, shared, milliseconds, increment_ms, 
-                           openings_split[i], sprt, args.ratinginterval)
+                          openings_split[i], sprt, args.ratinginterval)
             process = multiprocessing.Process(target=worker, args=worker_args)
             processes.append(process)
             process.start()
+
         # Wait for the workers to end
         for p in processes:
             p.join()

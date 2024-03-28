@@ -13,6 +13,6 @@ python main.py ^
 --tc 10+0.1 ^
 --concurrency 16 ^
 --openings openings_8ply.txt ^
---elo0 0 --elo1 5 --alpha 0.05 --beta 0.05 --cutechess ^
+--elo0 0 --elo1 5 --alpha 0.05 --beta 0.05 --cutechess_llr ^
 --ratinginterval 25
 ```
