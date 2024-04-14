@@ -1,4 +1,4 @@
-from engine import Engine
+from engine import *
 from sprt_math import SPRT
 import ataxx
 import time
@@ -18,16 +18,16 @@ def worker(process_id: int,
            sprt: SPRT,
            rating_interval: int):
 
-    print("Starting worker", process_id)
+    # print("Starting worker", process_id)
 
     assert len(openings) >= 1
     assert len(shared_data.keys()) == 6
 
-    # Debug file to log messages between this worker and its 2 engines
-    # Each worker creates his own debug file (debug/1.txt, debug/2.txt, debug/3.txt, ...)
-    debug_file = open("debug/" + str(process_id) + ".txt", "w")
-
     board = None # Our ataxx board, using the python ataxx library
+
+    # File to log all communication between the 2 engines and Ataxxer
+    debug_file = open("debug/worker" + str(process_id) + ".txt", "w") 
+
     eng1 = Engine(exe1, debug_file) # Engine 1, passed in program args
     eng2 = Engine(exe2, debug_file) # Engine 2, passed in program args
     eng_red = None     # Engine playing red
@@ -36,21 +36,6 @@ def worker(process_id: int,
 
     opening_index = -1
     must_repeat_opening = False
-
-    # Send "go btime <btime> wtime <wtime> binc <binc> winc <winc>" to engine to move
-    def send_go():
-        nonlocal board, eng1, eng2, eng_red, eng_blue, eng_to_play
-        assert board != None
-        assert eng1 != None and eng2 != None
-        assert eng_red != None and eng_blue != None
-        assert eng_to_play != None
-
-        command = "go"
-        command += " btime " + str(eng_red.milliseconds)
-        command += " wtime " + str(eng_blue.milliseconds)
-        command += " binc " + str(tc_increment_milliseconds)
-        command += " winc " + str(tc_increment_milliseconds)
-        eng_to_play.send(command)
 
     # Setup a game and play it until its over, returning the result (see constants)
     def play_game():
@@ -100,8 +85,15 @@ def worker(process_id: int,
             eng1.send("position fen " + fen)
             eng2.send("position fen " + fen)
 
-            # Send go command and initialize time this turn started
-            send_go()
+            # Send "go btime <btime> wtime <wtime> binc <binc> winc <winc>" to engine to move
+            command = "go"
+            command += " btime " + str(eng_red.milliseconds)
+            command += " wtime " + str(eng_blue.milliseconds)
+            command += " binc " + str(tc_increment_milliseconds)
+            command += " winc " + str(tc_increment_milliseconds)
+            eng_to_play.send(command)
+
+            # init time this turn started, in seconds
             start_time = time.time()
 
             # Wait for "bestmove <move>" from the engine
@@ -137,7 +129,7 @@ def worker(process_id: int,
     # Main loop, play games over and over
     while True:
         # Play a full game and get the result (see constants)
-        game_result_type = play_game()
+        game_result_type = play_game()  
 
         # Update shared_data variables between the processes: wins, losses, draws, etc
         shared_data["games"].value += 1
